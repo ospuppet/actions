@@ -1,0 +1,39 @@
+From 1ac32ecc8c0b62199aae37c55e2d7979635b0892 Mon Sep 17 00:00:00 2001
+From: Jeffrey Clark <h0tw1r3@users.noreply.github.com>
+Date: Sat, 3 Aug 2024 19:54:20 +0000
+Subject: [PATCH 2/3] (ospuppet) fix rubyntlm dependency on base64
+
+vendor added a dependency on base64 for ruby 3.4 compatibility
+---
+ configs/components/rubygem-base64.rb   | 6 ++++++
+ configs/projects/bolt-runtime.rb       | 1 +
+ 2 files changed, 7 insertions(+)
+ create mode 100644 configs/components/rubygem-base64.rb
+
+diff --git a/configs/components/rubygem-base64.rb b/configs/components/rubygem-base64.rb
+new file mode 100644
+index 0000000..4ac511d
+--- /dev/null
++++ b/configs/components/rubygem-base64.rb
+@@ -0,0 +1,6 @@
++component 'rubygem-base64' do |pkg, settings, platform|
++  pkg.version '0.2.0'
++  pkg.sha256sum '0f25e9b21a02a0cc0cea8ef92b2041035d39350946e8789c562b2d1a3da01507'
++
++  instance_eval File.read('configs/components/_base-rubygem.rb')
++end
+diff --git a/configs/projects/bolt-runtime.rb b/configs/projects/bolt-runtime.rb
+index 2be7f6f..ff57eac 100644
+--- a/configs/projects/bolt-runtime.rb
++++ b/configs/projects/bolt-runtime.rb
+@@ -162,6 +162,7 @@ project 'bolt-runtime' do |proj|
+   proj.component 'rubygem-aws-sdk-core'
+   proj.component 'rubygem-aws-sdk-ec2'
+   proj.component 'rubygem-aws-sigv4'
++  proj.component 'rubygem-base64'
+   proj.component 'rubygem-bindata'
+   proj.component 'rubygem-builder'
+   proj.component 'rubygem-CFPropertyList'
+-- 
+2.25.1
+

@@ -1,0 +1,82 @@
+---
+name: puppet-runtime
+run-name: ${{ format('platform={0} project={1}', inputs.platform, inputs.project) }}
+
+on:
+    workflow_dispatch:
+        inputs:
+            platform:
+                description: "platform"
+                required: true
+                type: choice
+                options:
+                    - debian-12-amd64
+                    - amazon-2023-x86_64
+                    - ubuntu-24.04-amd64
+            project:
+                description: "project"
+                required: true
+                type: choice
+                options:
+                    - agent-runtime-main
+                    - agent-runtime-7.x
+                    - bolt-runtime
+                    - pdk-runtime
+
+env:
+    VANAGON_LOCATION: https://github.com/ospuppet/vanagon.git#ospuppet
+    BUNDLE_WITHOUT: "test:development:ec2-engine"
+    WORKDIR: "${{ github.workspace }}/work"
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: checkout puppet-runtime
+              uses: actions/checkout@v4
+              with:
+                  repository: puppetlabs/puppet-runtime
+                  fetch-tags: true
+
+            - name: checkout ospuppet
+              uses: actions/checkout@v4
+              with:
+                  path: ospuppet
+
+            - name: setup
+              run: |
+                  mkdir -p "${{ env.WORKDIR }}"
+                  git apply -v -3 ospuppet/puppet-runtime/*.patch
+
+            - uses: ruby/setup-ruby@v1
+              with:
+                  ruby-version: 3.2
+                  bundler-cache: true
+
+            - uses: actions/cache/restore@v4
+              with:
+                  path: ${{ env.WORKDIR }}
+                  key: puppet-runtime-sources
+
+            - name: build
+              run: |
+                  bundle exec vanagon build -e docker -w "${{ env.WORKDIR }}" -r "/tmp/${{ inputs.project }}" "${{ inputs.project }}" "${{ inputs.platform }}"
+
+            - name: output
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ inputs.platform }}__${{ inputs.project }}
+                  path: |
+                      output
+
+            - name: cleanup work path
+              if: success() || failure()
+              run: |
+                  find -E "${{ env.WORKDIR }}/" -maxdepth 1 -mindepth 1 -not -iregex '.*\.(gem|gz|zip|xz)$' -exec rm -rf {} \; 2>/dev/null ||
+                    find "${{ env.WORKDIR }}/" -maxdepth 1 -mindepth 1 -not -iregex '.*\.\(gem\|gz\|zip\|xz\)$' -exec rm -rf {} \;
+
+            - uses: actions/cache/save@v4
+              if: success() || failure()
+              with:
+                  path: ${{ env.WORKDIR }}
+                  key: puppet-runtime-sources
