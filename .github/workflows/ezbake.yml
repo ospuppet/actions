@@ -33,17 +33,6 @@ on:
           - container
           - project
           - repo
-      ezbake_unreproducible_builds:
-        description: Support snapshot ezbake builds
-        type: boolean
-        default: true
-      ezbake_nodeploy:
-        description: Do not deploy ezbake build to repository
-        type: boolean
-        default: true
-      lein_profiles:
-        description: Lein profiles to use to build package
-        default: ezbake
 
 env:
   EZBAKE_REPO: "https://github.com/ospuppet/ezbake#ospuppet"
@@ -94,10 +83,6 @@ jobs:
               PARAMS+=(--env EZBAKE_REPO="${X%#*}" --env EZBAKE_REF="${X#*#}")
               ;;
           esac
-
-          [[ -n "${{ inputs.ezbake_unreproducible_builds }}" ]] && PARAMS+=(--env EZBAKE_UNREPRODUCIBLE_BUILDS=${{ inputs.ezbake_unreproducible_builds }})
-          [[ -n "${{ inputs.ezbake_nodeploy }}" ]] && PARAMS+=(--env EZBAKE_NODEPLOY=${{ inputs.ezbake_nodeploy }})
-          [[ -n "${{ inputs.lein_profiles }}" ]] && PARAMS+=(--env LEIN_PROFILES="${{ inputs.lein_profiles }}")
 
           set -x
           docker run --rm -v ${{ github.workspace }}/output:/output -v ${{ github.workspace }}/repo:/repo "${PARAMS[@]}" "ghcr.io/ospuppet/ezbake:latest"
