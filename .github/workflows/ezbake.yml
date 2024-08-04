@@ -1,0 +1,116 @@
+---
+name: ezbake
+run-name: >
+  project=${{ inputs.project }}#${{ inputs.project_ref }}
+  platform=${{ inputs.platform }}
+  ${{ inputs.ezbake_version != 'container' && format('ezbake={0}', inputs.ezbake_version) || '' }}
+
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: Project to build
+        type: choice
+        options:
+          - puppetserver
+          - puppetdb
+      project_ref:
+        description: Git ref of project
+        required: true
+        default: 'origin/main'
+      platform:
+        description: platform to package
+        type: choice
+        options:
+          - debian-12
+          - ubuntu-24.04
+          - amazon-2023
+      ezbake_version:
+        description: EZBake version
+        type: choice
+        default: container
+        options:
+          - container
+          - project
+          - repo
+      ezbake_unreproducible_builds:
+        description: Support snapshot ezbake builds
+        type: boolean
+        default: true
+      ezbake_nodeploy:
+        description: Do not deploy ezbake build to repository
+        type: boolean
+        default: true
+      lein_profiles:
+        description: Lein profiles to use to build package
+        default: ezbake
+
+env:
+  EZBAKE_REPO: "https://github.com/ospuppet/ezbake#ospuppet"
+  COW: ''
+  MOCK: ''
+
+jobs:
+  package:
+    name: Package ${{ inputs.project }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Setup environment
+        run: |
+          echo "${{ inputs.platform }}" | \
+            sed -re 's/ubuntu-24.04/COW=base-noble-i386.cow/' \
+                 -e 's/debian-12/COW=base-bookworm-i386.cow/' \
+                 -e 's/(amazon-2023)/MOCK=pl-\1-x86_64/' \
+                 >> $GITHUB_ENV
+
+      - name: Cache m2 repo
+        id: local-repo
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-local-repo
+          path: repo
+
+      - name: Build
+        run: |
+          mkdir -p output repo
+
+          PARAMS=()
+          PARAMS+=(--env PROJECT_REPO="${{ github.server_url }}/${{ github.repository_owner }}/${{ inputs.project }}")
+
+          [[ -n "${{ inputs.project_ref }}" ]] && PARAMS+=(--env PROJECT_REF="${{ inputs.project_ref }}")
+          PARAMS+=(--env COW=${{ env.COW }})
+          PARAMS+=(--env MOCK=${{ env.MOCK }})
+
+          case "${{ inputs.ezbake_version }}" in
+            container | repo)
+              PARAMS+=(--env UPDATE_EZBAKE_VERSION=true)
+              ;;&
+            repo)
+              X="${{ env.EZBAKE_REPO }}"
+              PARAMS+=(--env EZBAKE_REPO="${X%#*}" --env EZBAKE_REF="${X#*#}")
+              ;;
+          esac
+
+          [[ -n "${{ inputs.ezbake_unreproducible_builds }}" ]] && PARAMS+=(--env EZBAKE_UNREPRODUCIBLE_BUILDS=${{ inputs.ezbake_unreproducible_builds }})
+          [[ -n "${{ inputs.ezbake_nodeploy }}" ]] && PARAMS+=(--env EZBAKE_NODEPLOY=${{ inputs.ezbake_nodeploy }})
+          [[ -n "${{ inputs.lein_profiles }}" ]] && PARAMS+=(--env LEIN_PROFILES="${{ inputs.lein_profiles }}")
+
+          set -x
+          docker run --rm -v ${{ github.workspace }}/output:/output -v ${{ github.workspace }}/repo:/repo "${PARAMS[@]}" "ghcr.io/ospuppet/ezbake:latest"
+
+      - name: cleanup output
+        run: |
+          cd ${{ github.workspace }}/output
+          { find . -name 'i386' -type d -print0 | xargs -0 rm -vrf ; } || true
+          ARCHIVE=$(find . -regex './${{ inputs.project }}-.*')
+          echo "OUTPUT_NAME=$(basename -s.tar.gz ${ARCHIVE})" >> $GITHUB_ENV
+          rm "${ARCHIVE}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.platform }}__${{ env.OUTPUT_NAME }}
+          path: ${{ github.workspace }}/output
