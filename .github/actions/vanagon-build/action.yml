@@ -1,0 +1,46 @@
+---
+name: build vanagon project
+
+inputs:
+    directory:
+        required: true
+        type: string
+    platform:
+        required: true
+        type: string
+    project:
+        required: true
+        type: string
+    workdir:
+        required: true
+        type: string
+        default: "${{ github.workspace }}/workdir"
+
+outputs:
+    artifact-directory:
+        value: ${{ inputs.directory }}/output
+
+runs:
+    using: composite
+    steps:
+        - uses: actions/cache/restore@v4
+          with:
+              path: ${{ inputs.workdir }}
+              key: vanagon-sources
+
+        - name: build
+          working-directory: ${{ inputs.directory }}
+          run: |
+              mkdir -p "${{ inputs.workdir }}"
+              bundle exec vanagon build -e docker -k always -w "${{ inputs.workdir }}" -r "/tmp/${{ inputs.project }}" "${{ inputs.project }}" "${{ inputs.platform }}"
+
+        - name: cleanup workdir
+          if: success() || failure()
+          working-directory: ${{ inputs.workdir }}
+          run: find . -maxdepth 1 -mindepth 1 -not -iregex '.*\.\(gem\|gz\|zip\|xz\)$' -exec rm -rf {} \;
+
+        - uses: actions/cache/save@v4
+          if: success() || failure()
+          with:
+              path: ${{ inputs.workdir }}
+              key: vanagon-sources
