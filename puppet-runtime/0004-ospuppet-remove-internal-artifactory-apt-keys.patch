@@ -1,0 +1,44 @@
+From 2fa2e3e83afb3f76a26d0b205c484cd879e4f0e4 Mon Sep 17 00:00:00 2001
+From: Jeffrey Clark <h0tw1r3@users.noreply.github.com>
+Date: Mon, 5 Aug 2024 13:22:09 +0000
+Subject: [PATCH 4/4] (ospuppet) remove internal artifactory apt keys
+
+---
+ configs/platforms/ubuntu-20.04-amd64.rb | 1 -
+ configs/platforms/ubuntu-22.04-amd64.rb | 1 -
+ configs/platforms/ubuntu-24.04-amd64.rb | 1 -
+ 3 files changed, 3 deletions(-)
+
+diff --git a/configs/platforms/ubuntu-20.04-amd64.rb b/configs/platforms/ubuntu-20.04-amd64.rb
+index a3ad6a0..bbd98b0 100644
+--- a/configs/platforms/ubuntu-20.04-amd64.rb
++++ b/configs/platforms/ubuntu-20.04-amd64.rb
+@@ -11,5 +11,4 @@ platform "ubuntu-20.04-amd64" do |plat|
+     zlib1g-dev
+   )
+   plat.provision_with "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq && apt-get install -qy --no-install-recommends #{packages.join(' ')}"
+-  plat.provision_with "curl https://artifactory.delivery.puppetlabs.net/artifactory/api/gpg/key/public | apt-key add -"
+ end
+diff --git a/configs/platforms/ubuntu-22.04-amd64.rb b/configs/platforms/ubuntu-22.04-amd64.rb
+index 6cef37e..9ebc1a0 100644
+--- a/configs/platforms/ubuntu-22.04-amd64.rb
++++ b/configs/platforms/ubuntu-22.04-amd64.rb
+@@ -11,5 +11,4 @@ platform "ubuntu-22.04-amd64" do |plat|
+     zlib1g-dev
+   )
+   plat.provision_with "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq && apt-get install -qy --no-install-recommends #{packages.join(' ')}"
+-  plat.provision_with "curl https://artifactory.delivery.puppetlabs.net/artifactory/api/gpg/key/public | apt-key add -"
+ end
+diff --git a/configs/platforms/ubuntu-24.04-amd64.rb b/configs/platforms/ubuntu-24.04-amd64.rb
+index fd8f619..162cef9 100644
+--- a/configs/platforms/ubuntu-24.04-amd64.rb
++++ b/configs/platforms/ubuntu-24.04-amd64.rb
+@@ -11,5 +11,4 @@ platform "ubuntu-24.04-amd64" do |plat|
+     zlib1g-dev
+   )
+   plat.provision_with "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq && apt-get install -qy --no-install-recommends #{packages.join(' ')}"
+-  plat.provision_with "curl https://artifactory.delivery.puppetlabs.net/artifactory/api/gpg/key/public | apt-key add -"
+ end
+-- 
+2.25.1
+

@@ -1,7 +1,7 @@
-From 9ee8e13d556753b1955872dd46baf8f42caee785 Mon Sep 17 00:00:00 2001
+From 1f7100afd5155470f0db8c2d535217862c886b47 Mon Sep 17 00:00:00 2001
 From: Jeffrey Clark <h0tw1r3@users.noreply.github.com>
 Date: Sat, 3 Aug 2024 22:50:35 +0000
-Subject: [PATCH 3/3] (ospuppet) support ref gem location_for
+Subject: [PATCH 3/4] (ospuppet) support ref gem location_for
 
 ---
  Gemfile | 6 +++++-
