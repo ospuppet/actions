@@ -11,10 +11,6 @@ inputs:
     project:
         required: true
         type: string
-    workdir:
-        required: true
-        type: string
-        default: "${{ github.workspace }}/workdir"
 
 outputs:
     artifact-directory:
@@ -23,23 +19,27 @@ outputs:
 runs:
     using: composite
     steps:
+        - name: generate cache key
+          id: cachekey
+          shell: bash
+          working-directory: ${{ inputs.directory }}
+          run: echo "value=$(bundle exec vanagon inspect ${{ inputs.project }} ${{ inputs.platform }} | jq -r '.[] | [.url, (.options | join(","))] | @csv' | md5sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
+
         - uses: actions/cache@v4
           with:
-              path: ${{ inputs.workdir }}
-              key: vanagon-sources
-              restore-keys: vanagon-sources
+              path: |-
+                  workdir/*.gz
+                  workdir/*.zip
+                  workdir/*.xz
+                  workdir/*.gem
+              key: vanagon-sources-${{ steps.cachekey.outputs.value }}
+              restore-keys: vanagon-sources-
               enableCrossOsArchive: true
-              save-always: true
 
         - name: build
-          working-directory: ${{ inputs.directory }}
           shell: bash
           run: |
-              mkdir -p "${{ inputs.workdir }}"
-              bundle exec vanagon build -e docker -k always -w "${{ inputs.workdir }}" -r "/tmp/${{ inputs.project }}" "${{ inputs.project }}" "${{ inputs.platform }}"
-
-        - name: cleanup workdir
-          if: success() || failure()
-          working-directory: ${{ inputs.workdir }}
-          shell: bash
-          run: find . -maxdepth 1 -mindepth 1 -not -iregex '.*\.\(gem\|gz\|zip\|xz\)$' -exec rm -rf {} \;
+              WHERE=$(pwd)
+              mkdir -p workdir
+              cd ${{ inputs.directory }}
+              bundle exec vanagon build -e docker -k always -w "${WHERE}/workdir" -r "/tmp/${{ inputs.project }}" "${{ inputs.project }}" "${{ inputs.platform }}"
