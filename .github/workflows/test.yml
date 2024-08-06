@@ -1,7 +1,6 @@
 name: test
 
-env:
-    VANAGON_LOCATION: https://github.com/ospuppet/vanagon.git#ospuppet
+on: [push, pull_request]
 
 jobs:
     test:

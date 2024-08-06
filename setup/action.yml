@@ -40,6 +40,7 @@ runs:
               BUNDLE_WITHOUT=test:development:ec2-engine
               BUNDLE_SILENCE_ROOT_WARNING=true
               EOD
+              INPUT_REPOSITORY=${{ inputs.repository }}
               cat >> $GITHUB_OUTPUT <<EOD
               repository-owner=${INPUT_REPOSITORY%/*}
               repository-name=${INPUT_REPOSITORY#*/}
@@ -61,10 +62,12 @@ runs:
           with:
               repository: ${{ inputs.repository }}
               path: ${{ steps.vars.outputs.working-directory }}
+              fetch-tags: true
 
         - name: patch
           if: steps.vars.outputs.patch-path
           working-directory: ${{ steps.vars.outputs.working-directory }}
+          shell: bash
           run: git apply -v -3 ${{ steps.vars.outputs.patch-path }}/*.patch
 
         - name: setup ruby

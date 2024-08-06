@@ -23,13 +23,17 @@ outputs:
 runs:
     using: composite
     steps:
-        - uses: actions/cache/restore@v4
+        - uses: actions/cache@v4
           with:
               path: ${{ inputs.workdir }}
               key: vanagon-sources
+              restore-keys: vanagon-sources
+              enableCrossOsArchive: true
+              save-always: true
 
         - name: build
           working-directory: ${{ inputs.directory }}
+          shell: bash
           run: |
               mkdir -p "${{ inputs.workdir }}"
               bundle exec vanagon build -e docker -k always -w "${{ inputs.workdir }}" -r "/tmp/${{ inputs.project }}" "${{ inputs.project }}" "${{ inputs.platform }}"
@@ -37,10 +41,5 @@ runs:
         - name: cleanup workdir
           if: success() || failure()
           working-directory: ${{ inputs.workdir }}
+          shell: bash
           run: find . -maxdepth 1 -mindepth 1 -not -iregex '.*\.\(gem\|gz\|zip\|xz\)$' -exec rm -rf {} \;
-
-        - uses: actions/cache/save@v4
-          if: success() || failure()
-          with:
-              path: ${{ inputs.workdir }}
-              key: vanagon-sources
