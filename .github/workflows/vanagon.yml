@@ -1,0 +1,46 @@
+name: vanagon
+run-name: ${{ format('project={0} platform={1}', inputs.project, inputs.platform) }}
+
+on:
+    workflow_dispatch:
+        inputs:
+            repo:
+                description: "repository"
+                required: true
+                type: string
+            repo_ref:
+                description: "ref"
+                required: true
+                type: string
+                default: main
+            project:
+                description: "project"
+                required: true
+                type: string
+            platform:
+                description: "platform"
+                required: true
+                type: choice
+                options:
+                    - debian-12-amd64
+                    - amazon-2023-x86_64
+                    - ubuntu-24.04-amd64
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: ospuppet/actions/setup@main
+              id: setup
+              with:
+                  repository: ${{ inputs.repo }}
+                  ref: ${{ inputs.repo_ref }}
+
+            - uses: ospuppet/actions/build@main
+              id: build
+              with:
+                  directory: ${{ steps.setup.outputs.working-directory }}
+                  platform: ${{ inputs.platform }}
+                  project: ${{ inputs.project }}
