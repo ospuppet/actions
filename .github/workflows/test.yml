@@ -1,0 +1,23 @@
+name: test
+
+env:
+    VANAGON_LOCATION: https://github.com/ospuppet/vanagon.git#ospuppet
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+
+            - uses: ospuppet/actions/setup@main
+              id: setup
+              with:
+                  repository: ospuppet/test-suite-vanagon
+                  ref: origin/main
+
+            - uses: ospuppet/actions/build@main
+              id: build
+              with:
+                  directory: ${{ steps.setup.outputs.working-directory }}
+                  platform: debian-12-amd64
+                  project: dummy

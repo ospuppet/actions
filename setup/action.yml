@@ -45,7 +45,7 @@ runs:
               repository-name=${INPUT_REPOSITORY#*/}
               working-directory=vanagon/${INPUT_REPOSITORY#*/}
               EOD
-              PATCH_PATH="${{ github.workspace }}/${INPUT_REPOSITORY#*/}"
+              PATCH_PATH="${{ github.workspace }}/patches/${INPUT_REPOSITORY#*/}"
               if [[ -d $PATCH_PATH ]] && [[ "${{ inputs.patch }}" == "true" ]] ; then
                 echo "patch-path=${PATCH_PATH}" >> $GITHUB_OUTPUT
               fi
