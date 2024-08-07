@@ -1,0 +1,37 @@
+From 641c1265bce9e0adf56932d40779e7c38db5e843 Mon Sep 17 00:00:00 2001
+From: Jeffrey Clark <h0tw1r3@users.noreply.github.com>
+Date: Wed, 7 Aug 2024 03:01:06 +0000
+Subject: [PATCH 3/3] (ospuppet) add amazon 2023 platform
+
+---
+ configs/platforms/amazon-2023-aarch64.rb | 5 +++++
+ configs/platforms/amazon-2023-x86_684.rb | 5 +++++
+ 2 files changed, 10 insertions(+)
+ create mode 100644 configs/platforms/amazon-2023-aarch64.rb
+ create mode 100644 configs/platforms/amazon-2023-x86_684.rb
+
+diff --git a/configs/platforms/amazon-2023-aarch64.rb b/configs/platforms/amazon-2023-aarch64.rb
+new file mode 100644
+index 00000000..7f59fdb9
+--- /dev/null
++++ b/configs/platforms/amazon-2023-aarch64.rb
+@@ -0,0 +1,5 @@
++platform "amazon-2023-aarch64" do |plat|
++  plat.inherit_from_default
++  packages = %w(git)
++  plat.provision_with("yum install -y #{packages.join(' ')}")
++end
+diff --git a/configs/platforms/amazon-2023-x86_684.rb b/configs/platforms/amazon-2023-x86_684.rb
+new file mode 100644
+index 00000000..44352a02
+--- /dev/null
++++ b/configs/platforms/amazon-2023-x86_684.rb
+@@ -0,0 +1,5 @@
++platform "amazone-2023-x86_64" do |plat|
++  plat.inherit_from_default
++  packages = %w(git)
++  plat.provision_with("yum install -y #{packages.join(' ')}")
++end
+-- 
+2.25.1
+
