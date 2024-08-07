@@ -1,5 +1,5 @@
 name: vanagon
-run-name: ${{ format('project={0} platform={1}', inputs.project, inputs.platform) }}
+run-name: ${{ format('repo={0}#{1} project={2} platform={3}', inputs.repo, inputs.repo_ref, inputs.project, inputs.platform) }}
 
 on:
     workflow_dispatch:
@@ -8,39 +8,57 @@ on:
                 description: "repository"
                 required: true
                 type: string
+                default: "ospuppet/test-suite-vanagon"
             repo_ref:
                 description: "ref"
                 required: true
                 type: string
-                default: main
+                default: "origin/main"
             project:
                 description: "project"
                 required: true
                 type: string
+                default: "dummy"
             platform:
                 description: "platform"
                 required: true
                 type: choice
+                default: "debian-12-amd64"
                 options:
                     - debian-12-amd64
                     - amazon-2023-x86_64
                     - ubuntu-24.04-amd64
 
 jobs:
-    test:
+    build:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
 
-            - uses: ospuppet/actions/setup@main
-              id: setup
+            - name: initialize
+              uses: ./init
+              id: init
               with:
                   repository: ${{ inputs.repo }}
-                  ref: ${{ inputs.repo_ref }}
+                  ref: ${{ inputs.ref_ref }}
 
-            - uses: ospuppet/actions/build@main
-              id: build
+            - name: setup project
+              uses: ./setup
+              id: setup
               with:
-                  directory: ${{ steps.setup.outputs.working-directory }}
+                  directory: ${{ steps.init.outputs.directory }}
                   platform: ${{ inputs.platform }}
                   project: ${{ inputs.project }}
+
+            - name: build project
+              uses: ./build
+              id: build
+              with:
+                  directory: ${{ steps.init.outputs.directory }}
+                  cache-key: ${{ steps.setup.outputs.cache-key }}
+                  platform: ${{ inputs.platform }}
+                  project: ${{ inputs.project }}
+
+            - name: show output
+              run: |
+                  find ${{ steps.build.outputs.artifact-directory }} -type f -print0 | xargs -0 ls -alh

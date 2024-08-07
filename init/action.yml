@@ -1,0 +1,83 @@
+---
+name: initialize vanagon project
+author: h0tw1r3
+
+inputs:
+    repository:
+        description: project repository
+        type: string
+    ref:
+        description: project ref
+        type: string
+    ruby_version:
+        type: string
+        default: "3.2"
+    vanagon_location:
+        type: string
+        default: https://github.com/ospuppet/vanagon.git#ospuppet
+    patch:
+        description: apply patches
+        type: boolean
+        default: true
+
+outputs:
+    directory:
+        value: ${{ steps.setup.outputs.directory }}
+    repository-owner:
+        value: ${{ steps.setup.outputs.repository-owner }}
+    repository-name:
+        value: ${{ steps.setup.outputs.repository-name }}
+
+runs:
+    using: composite
+    steps:
+        - name: setup
+          id: setup
+          shell: bash
+          run: |-
+              cat >> $GITHUB_ENV <<EOD
+              VANAGON_LOCATION=${{ inputs.vanagon_location }}
+              BUNDLE_WITHOUT=test:development:ec2-engine
+              BUNDLE_SILENCE_ROOT_WARNING=true
+              EOD
+              INPUT_REPOSITORY=${{ inputs.repository }}
+              cat >> $GITHUB_OUTPUT <<EOD
+              repository-owner=${INPUT_REPOSITORY%/*}
+              repository-name=${INPUT_REPOSITORY#*/}
+              directory=vanagon/${INPUT_REPOSITORY#*/}
+              EOD
+              PATCH_PATH="${{ github.workspace }}/patches/${INPUT_REPOSITORY#*/}"
+              if [[ -d $PATCH_PATH ]] && [[ "${{ inputs.patch }}" == "true" ]] ; then
+                echo "patch-path=${PATCH_PATH}" >> $GITHUB_OUTPUT
+              fi
+
+        - name: checkout module (act)
+          if: github.actor == 'nektos/act'
+          shell: bash
+          run: git clone https://github.com/${{ inputs.repository }} ${{ steps.setup.outputs.directory }}
+
+        - name: checkout module (github)
+          if: github.actor != 'nektos/act'
+          uses: actions/checkout@v4
+          with:
+              repository: ${{ inputs.repository }}
+              path: ${{ steps.setup.outputs.directory }}
+              fetch-tags: true
+
+        - name: patch
+          if: steps.setup.outputs.patch-path
+          working-directory: ${{ steps.setup.outputs.directory }}
+          shell: bash
+          run: git apply -v -3 ${{ steps.setup.outputs.patch-path }}/*.patch
+
+        - name: setup ruby
+          uses: "ruby/setup-ruby@v1"
+          with:
+              ruby-version: ${{ inputs.ruby_version }}
+              bundler-cache: true
+              working-directory: ${{ steps.setup.outputs.directory }}
+
+        - name: confirm vanagon project
+          working-directory: ${{ steps.setup.outputs.directory }}
+          shell: bash
+          run: bundle exec vanagon list

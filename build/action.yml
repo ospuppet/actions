@@ -1,5 +1,6 @@
 ---
 name: build vanagon project
+description: stuff
 
 inputs:
     directory:
@@ -11,35 +12,39 @@ inputs:
     project:
         required: true
         type: string
+    cache-key:
+        required: true
+        type: string
 
 outputs:
     artifact-directory:
-        value: ${{ inputs.directory }}/output
+        value: ${{ steps.artifacts.outputs.directory }}
 
 runs:
     using: composite
     steps:
-        - name: generate cache key
-          id: cachekey
-          shell: bash
-          working-directory: ${{ inputs.directory }}
-          run: echo "value=$(bundle exec vanagon inspect ${{ inputs.project }} ${{ inputs.platform }} | jq -r '.[] | [.url, (.options | join(","))] | @csv' | md5sum | cut -d' ' -f1)" >> $GITHUB_OUTPUT
-
-        - uses: actions/cache@v4
+        - name: restore cache
+          id: cache
+          uses: actions/cache/restore@v4
           with:
-              path: |-
-                  workdir/*.gz
-                  workdir/*.zip
-                  workdir/*.xz
-                  workdir/*.gem
-              key: vanagon-sources-${{ steps.cachekey.outputs.value }}
-              restore-keys: vanagon-sources-
-              enableCrossOsArchive: true
+              key: ${{ inputs.project }}-${{ inputs.platform }}-${{ inputs.cache-key }}
+              path: ${{ inputs.directory }}/output
 
         - name: build
+          if: steps.cache.outputs.cache-hit != 'true'
+          working-directory: ${{ inputs.directory }}
           shell: bash
           run: |
-              WHERE=$(pwd)
-              mkdir -p workdir
-              cd ${{ inputs.directory }}
-              bundle exec vanagon build -e docker -k always -w "${WHERE}/workdir" -r "/tmp/${{ inputs.project }}" "${{ inputs.project }}" "${{ inputs.platform }}"
+              bundle exec vanagon build -e docker -w "workdir" -r "/tmp/${{ inputs.cache-key }}" "${{ inputs.project }}" "${{ inputs.platform }}"
+
+        - name: save cache
+          if: steps.cache.outputs.cache-hit != 'true'
+          uses: actions/cache/save@v4
+          with:
+              key: ${{ inputs.project }}-${{ inputs.platform }}-${{ inputs.cache-key }}
+              path: ${{ inputs.directory }}/output
+
+        - name: artifacts
+          id: artifacts
+          shell: bash
+          run: echo "directory=${{ inputs.directory }}/output" >> $GITHUB_OUTPUT

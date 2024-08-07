@@ -2,21 +2,40 @@ name: test
 
 on: [push, pull_request]
 
+env:
+    platform: debian-12-amd64
+    project: dummy
+
 jobs:
     test:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
 
-            - uses: ospuppet/actions/setup@main
+            - name: initialize
+              uses: ./init
+              id: init
+              with:
+                  repository: "ospuppet/test-suite-vanagon"
+                  ref: "origin/main"
+
+            - name: setup project
+              uses: ./setup
               id: setup
               with:
-                  repository: ospuppet/test-suite-vanagon
-                  ref: origin/main
+                  directory: ${{ steps.init.outputs.directory }}
+                  platform: ${{ env.platform }}
+                  project: ${{ env.project }}
 
-            - uses: ospuppet/actions/build@main
+            - name: build project
+              uses: ./build
               id: build
               with:
-                  directory: ${{ steps.setup.outputs.working-directory }}
-                  platform: debian-12-amd64
-                  project: dummy
+                  directory: ${{ steps.init.outputs.directory }}
+                  cache-key: ${{ steps.setup.outputs.cache-key }}
+                  platform: ${{ env.platform }}
+                  project: ${{ env.project }}
+
+            - name: show output
+              run: |
+                  find ${{ steps.build.outputs.artifact-directory }} -type f -print0 | xargs -0 ls -alh
