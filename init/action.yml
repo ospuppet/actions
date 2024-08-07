@@ -51,17 +51,13 @@ runs:
                 echo "patch-path=${PATCH_PATH}" >> $GITHUB_OUTPUT
               fi
 
-        - name: checkout module (act)
-          if: github.actor == 'nektos/act'
-          shell: bash
-          run: git clone https://github.com/${{ inputs.repository }} ${{ steps.setup.outputs.directory }}
-
-        - name: checkout module (github)
-          if: github.actor != 'nektos/act'
+        - name: checkout
           uses: actions/checkout@v4
           with:
               repository: ${{ inputs.repository }}
+              ref: ${{ inputs.ref }}
               path: ${{ steps.setup.outputs.directory }}
+              fetch-depth: 0
               fetch-tags: true
 
         - name: patch

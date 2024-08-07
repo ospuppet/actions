@@ -5,6 +5,8 @@ on: [push, pull_request]
 env:
     platform: debian-12-amd64
     project: dummy
+    repository: ospuppet/test-suite-vanagon
+    ref: main
 
 jobs:
     test:
@@ -16,8 +18,8 @@ jobs:
               uses: ./init
               id: init
               with:
-                  repository: "ospuppet/test-suite-vanagon"
-                  ref: "origin/main"
+                  repository: ${{ env.repository }}
+                  ref: ${{ env.ref }}
 
             - name: setup project
               uses: ./setup

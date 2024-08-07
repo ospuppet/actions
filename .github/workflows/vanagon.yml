@@ -40,7 +40,7 @@ jobs:
               id: init
               with:
                   repository: ${{ inputs.repo }}
-                  ref: ${{ inputs.ref_ref }}
+                  ref: ${{ inputs.repo_ref }}
 
             - name: setup project
               uses: ./setup
